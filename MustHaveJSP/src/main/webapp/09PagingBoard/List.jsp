@@ -1,3 +1,5 @@
+<%@page import="utils.BoardPage"%>
+<%@page import="org.apache.catalina.loader.WebappLoader"%>
 <%@page import="model1.board.BoardDTO"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
@@ -31,6 +33,21 @@ if(searchWord != null)
 }
 //Map콜렉션을 인수로 게시물의 갯수를 카운트한다.
 int totalCount = dao.selectCount(param);
+
+int pageSize = Integer.parseInt(application.getInitParameter("POSTS_PER_PAGE"));
+int blockPage = Integer.parseInt(application.getInitParameter("PAGES_PER_BLOCK"));
+
+int totalPage = (int)Math.ceil((double)totalCount / pageSize);
+
+int pageNum = 1;
+String pageTemp = request.getParameter("pageNum");
+if(pageTemp != null && !pageTemp.equals(""))
+	pageNum = Integer.parseInt(pageTemp);
+
+int start = (pageNum -1) * pageSize +1;
+int end = pageNum + pageSize;
+param.put("start", start);
+param.put("end", end);
 //목록에 출력할 게시물을 추출하여 반환받는다.
 List<BoardDTO> boardLists = dao.selectList(param);
 //자원해제
@@ -45,8 +62,9 @@ dao.close();
 	<body>
 		<!-- 공통 링크 -->
 	    <jsp:include page="../Common/Link.jsp" />  
+	    
 	
-	    <h2>목록 보기(List)</h2>
+	    <h2>목록 보기(List) - 현재 페이지 : <%= pageNum %> (전체 : <%= totalPage %>)</h2>
 	    <!-- 검색 폼 -->
 	    <!--  전송은 get 방식이고， action 속성을 지정하지 않았으므로 
     	submit하면 폼값이 현재 페이지로 전송된다. -->
@@ -89,11 +107,13 @@ dao.close();
 		// 출력할 게시물이 있는 경우에는 확장 for문으로 List컬랙션에
 		// 저장된 데이터의 갯수만큼 반복하여 출력한다.
 	    int virtualNum = 0; 
+		int countNum = 0;
 	    for (BoardDTO dto : boardLists)
 	    {
 	    	// 현재 출력할 게시물의 갯수에 따라 출력번호는 달라지므로
 	    	// totalCount를 사용하여 가상번호를 부여한다.
-	        virtualNum = totalCount--;   
+	      /*   virtualNum = totalCount--;  */  
+	      virtualNum = totalCount - (((pageNum -1) * pageSize) + countNum++);
 	%>
 	        <tr align="center">
 	        	<!-- 게시물의 가상 번호 -->
@@ -117,6 +137,11 @@ dao.close();
 	   
 	    <table border="1" width="90%">
 	        <tr align="right">
+	        	<td align="center">
+	        	<%= BoardPage.pagingStr(totalCount, pageSize,
+	        				blockPage, pageNum, request.getRequestURI())
+	        	%>
+	        	</td>
 	            <td><button type="button" onclick="location.href='Write.jsp';">글쓰기
 	                </button></td>
 	        </tr>
